@@ -6,6 +6,7 @@ import { PricingSection } from '@/components/landing/pricing-section'
 import { CharitiesSection } from '@/components/landing/charities-section'
 import { ImpactSection } from '@/components/landing/impact-section'
 import { createClient } from '@/lib/supabase/server'
+import { DrawResult } from '@/components/draw-result'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -14,13 +15,26 @@ export default async function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header user={user ? { email: user.email || '' } : null} />
+
       <main className="flex-1">
         <HeroSection />
         <HowItWorksSection />
         <PricingSection />
         <CharitiesSection />
         <ImpactSection />
+
+        {/* ✅ ADD DRAW SYSTEM HERE */}
+        <section className="container mx-auto px-4 py-12">
+          <h2 className="text-2xl font-bold mb-4 text-center">
+            Monthly Draw
+          </h2>
+
+          <div className="max-w-md mx-auto">
+            <DrawResult />
+          </div>
+        </section>
       </main>
+
       <Footer />
     </div>
   )

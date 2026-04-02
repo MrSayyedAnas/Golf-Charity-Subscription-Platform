@@ -5,10 +5,8 @@ import { Target } from 'lucide-react'
 interface Score {
   id: string
   course_name: string
-  total_score: number
-  course_par: number
-  handicap_differential: number
-  played_at: string
+  gross_score: number
+  date_played: string
 }
 
 interface ScoreHistoryProps {
@@ -31,7 +29,6 @@ export function ScoreHistory({ scores }: ScoreHistoryProps) {
   return (
     <div className="space-y-3">
       {scores.map((score) => {
-        const differential = score.total_score - score.course_par
         return (
           <div
             key={score.id}
@@ -39,8 +36,10 @@ export function ScoreHistory({ scores }: ScoreHistoryProps) {
           >
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{score.course_name}</p>
+
+              {/* ✅ FIXED DATE */}
               <p className="text-sm text-muted-foreground">
-                {new Date(score.played_at).toLocaleDateString('en-US', {
+                {new Date(score.date_played).toLocaleDateString('en-US', {
                   weekday: 'short',
                   month: 'short',
                   day: 'numeric',
@@ -48,10 +47,12 @@ export function ScoreHistory({ scores }: ScoreHistoryProps) {
                 })}
               </p>
             </div>
+
+            {/* ✅ FIXED SCORE DISPLAY */}
             <div className="ml-4 text-right">
-              <p className="text-2xl font-bold">{score.total_score}</p>
-              <p className={`text-sm ${differential > 0 ? 'text-destructive' : differential < 0 ? 'text-primary' : 'text-muted-foreground'}`}>
-                {differential > 0 ? '+' : ''}{differential} ({score.course_par} par)
+              <p className="text-2xl font-bold">{score.gross_score}</p>
+              <p className="text-sm text-muted-foreground">
+                Gross Score
               </p>
             </div>
           </div>

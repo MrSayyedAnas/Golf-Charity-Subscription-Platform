@@ -82,7 +82,7 @@ export default async function CheckoutPage({
                 <CardDescription>Secure checkout powered by Stripe</CardDescription>
               </CardHeader>
               <CardContent>
-                <Checkout productId={plan.id} />
+                <Checkout productId={plan.priceId} />
               </CardContent>
             </Card>
           </div>

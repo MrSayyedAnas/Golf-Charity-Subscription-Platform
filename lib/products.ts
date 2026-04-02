@@ -8,6 +8,9 @@ export interface Product {
   drawEntries: number
   charityAllocation: number
   popular?: boolean
+
+  // ✅ ADD THIS
+  priceId: string
 }
 
 export const SUBSCRIPTION_PLANS: Product[] = [
@@ -15,8 +18,9 @@ export const SUBSCRIPTION_PLANS: Product[] = [
     id: 'basic-monthly',
     name: 'Basic',
     description: 'Perfect for casual golfers who want to give back',
-    priceInCents: 999, // $9.99/month
+    priceInCents: 999,
     interval: 'month',
+    priceId: 'price_1THer2GxeVR3zW6uxME5BOkZ', // 🔁 replace in Stripe
     features: [
       'Log unlimited scores',
       '1 monthly draw entry',
@@ -31,8 +35,9 @@ export const SUBSCRIPTION_PLANS: Product[] = [
     id: 'premium-monthly',
     name: 'Premium',
     description: 'For dedicated golfers who want more impact',
-    priceInCents: 2499, // $24.99/month
+    priceInCents: 2499,
     interval: 'month',
+    priceId: 'price_1THh0qGxeVR3zW6uoIPODdgQ', // 🔁 replace in Stripe
     features: [
       'Everything in Basic',
       '3 monthly draw entries',
@@ -49,8 +54,9 @@ export const SUBSCRIPTION_PLANS: Product[] = [
     id: 'elite-monthly',
     name: 'Elite',
     description: 'Maximum impact for serious golfers',
-    priceInCents: 4999, // $49.99/month
+    priceInCents: 4999,
     interval: 'month',
+    priceId: 'price_1THh47GxeVR3zW6u4lwcRf7F',
     features: [
       'Everything in Premium',
       '5 monthly draw entries',
@@ -65,5 +71,5 @@ export const SUBSCRIPTION_PLANS: Product[] = [
   },
 ]
 
-// Alias for the checkout component compatibility
+// Alias
 export const PRODUCTS = SUBSCRIPTION_PLANS

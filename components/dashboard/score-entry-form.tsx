@@ -18,10 +18,9 @@ export function ScoreEntryForm({ userId }: ScoreEntryFormProps) {
   const [courseName, setCourseName] = useState('')
   const [totalScore, setTotalScore] = useState('')
   const [coursePar, setCoursePar] = useState('72')
-  const [courseRating, setCourseRating] = useState('')
-  const [slopeRating, setSlopeRating] = useState('')
   const [playedAt, setPlayedAt] = useState(new Date().toISOString().split('T')[0])
   const [loading, setLoading] = useState(false)
+
   const router = useRouter()
   const supabase = createClient()
 
@@ -29,35 +28,61 @@ export function ScoreEntryForm({ userId }: ScoreEntryFormProps) {
     e.preventDefault()
     setLoading(true)
 
-    // Calculate handicap differential
     const score = parseInt(totalScore)
-    const rating = parseFloat(courseRating) || 72
-    const slope = parseFloat(slopeRating) || 113
-    const handicapDifferential = ((score - rating) * 113) / slope
 
+    // ✅ STEP 1: Get existing scores (use correct column)
+    const { data: existingScores, error: fetchError } = await supabase
+      .from('scores')
+      .select('id, date_played')
+      .eq('user_id', userId)
+      .order('date_played', { ascending: true })
+
+    if (fetchError) {
+      console.error(fetchError)
+      toast.error('Error checking previous scores')
+      setLoading(false)
+      return
+    }
+
+    // ✅ STEP 2: Keep max 5 scores
+    if (existingScores && existingScores.length >= 5) {
+      const oldestScore = existingScores[0]
+
+      const { error: deleteError } = await supabase
+        .from('scores')
+        .delete()
+        .eq('id', oldestScore.id)
+
+      if (deleteError) {
+        console.error(deleteError)
+        toast.error('Failed to update score history')
+        setLoading(false)
+        return
+      }
+    }
+
+    // ✅ STEP 3: Insert new score (use correct DB fields)
     const { error } = await supabase.from('scores').insert({
       user_id: userId,
       course_name: courseName,
-      total_score: score,
-      course_par: parseInt(coursePar),
-      course_rating: rating,
-      slope_rating: slope,
-      handicap_differential: Math.round(handicapDifferential * 10) / 10,
-      played_at: playedAt,
+      gross_score: score,        // ✅ HERE
+      date_played: playedAt,     // ✅ HERE
     })
 
     if (error) {
+      console.error(error)
       toast.error('Failed to save score')
       setLoading(false)
       return
     }
 
     toast.success('Score logged successfully!')
+
+    // Reset form
     setCourseName('')
     setTotalScore('')
-    setCourseRating('')
-    setSlopeRating('')
     setLoading(false)
+
     router.refresh()
   }
 
@@ -93,7 +118,7 @@ export function ScoreEntryForm({ userId }: ScoreEntryFormProps) {
           <Label htmlFor="coursePar">Course Par</Label>
           <Select value={coursePar} onValueChange={setCoursePar}>
             <SelectTrigger id="coursePar">
-              <SelectValue placeholder="Select par" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="70">70</SelectItem>
@@ -102,33 +127,6 @@ export function ScoreEntryForm({ userId }: ScoreEntryFormProps) {
               <SelectItem value="73">73</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="courseRating">Course Rating (optional)</Label>
-          <Input
-            id="courseRating"
-            type="number"
-            step="0.1"
-            placeholder="e.g., 72.5"
-            value={courseRating}
-            onChange={(e) => setCourseRating(e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="slopeRating">Slope Rating (optional)</Label>
-          <Input
-            id="slopeRating"
-            type="number"
-            placeholder="e.g., 131"
-            value={slopeRating}
-            onChange={(e) => setSlopeRating(e.target.value)}
-            min={55}
-            max={155}
-          />
         </div>
       </div>
 
