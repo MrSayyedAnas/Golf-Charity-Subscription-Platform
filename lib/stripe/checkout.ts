@@ -6,7 +6,23 @@ export async function startCheckoutSession(
   email: string
 ) {
   try {
-    const stripe = getStripe() // ✅ initialize here
+    const stripe = getStripe()
+
+    // ✅ Validate inputs
+    if (!productId || !userId || !email) {
+      throw new Error('Missing required parameters')
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+
+    if (!baseUrl) {
+      throw new Error('Missing NEXT_PUBLIC_BASE_URL')
+    }
+
+    // ⚠️ productId MUST be a Stripe PRICE ID (price_xxx)
+    if (!productId.startsWith('price_')) {
+      throw new Error('Invalid Stripe price ID')
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -21,7 +37,7 @@ export async function startCheckoutSession(
 
       customer_email: email,
 
-      return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
+      return_url: `${baseUrl}/success`,
 
       metadata: {
         productId,
@@ -38,12 +54,15 @@ export async function startCheckoutSession(
     })
 
     if (!session.client_secret) {
-      throw new Error('No client secret returned')
+      throw new Error('No client secret returned from Stripe')
     }
 
     return session.client_secret
   } catch (error: any) {
     console.error('❌ Stripe session error FULL:', error)
-    throw new Error(error.message || 'Stripe session failed')
+
+    throw new Error(
+      error?.message || 'Stripe session creation failed'
+    )
   }
 }

@@ -8,59 +8,68 @@ import {
 import { loadStripe } from '@stripe/stripe-js'
 import { createClient } from '@/lib/supabase/client'
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-)
+// ✅ Validate Stripe key properly
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+
+if (!stripeKey) {
+  throw new Error('Missing Stripe publishable key')
+}
+
+const stripePromise = loadStripe(stripeKey)
 
 export function Checkout({ productId }: { productId: string }) {
   const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  // ✅ Get logged-in user
   useEffect(() => {
     const supabase = createClient()
 
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user)
-    })
+    const getUser = async () => {
+      try {
+        const { data, error } = await supabase.auth.getUser()
+
+        if (error) {
+          console.error('Auth error:', error)
+          setUser(null)
+        } else {
+          setUser(data?.user ?? null)
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err)
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    getUser()
   }, [])
 
   const fetchClientSecret = useCallback(async () => {
     if (!user) throw new Error('User not loaded')
 
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId,
-          userId: user.id,      // ✅ real user id
-          email: user.email,    // ✅ real email
-        }),
-      })
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productId,
+        userId: user.id,
+        email: user.email,
+      }),
+    })
 
-      const data = await res.json()
+    const data = await res.json()
 
-      if (!res.ok) {
-        console.error('❌ API ERROR:', data)
-        throw new Error(data.error || 'API request failed')
-      }
-
-      if (!data.clientSecret) {
-        console.error('❌ Missing clientSecret:', data)
-        throw new Error('No clientSecret returned')
-      }
-
-      return data.clientSecret
-    } catch (err) {
-      console.error('❌ Checkout error:', err)
-      throw err
+    if (!res.ok || !data.clientSecret) {
+      throw new Error(data.error || 'Checkout failed')
     }
+
+    return data.clientSecret
   }, [productId, user])
 
-  // ✅ Prevent rendering before user is ready
-  if (!user) {
-    return <p>Loading checkout...</p>
-  }
+  // ✅ Proper UI states (prevents blank screen)
+  if (loading) return <p>Loading checkout...</p>
+  if (!user) return <p>Please log in to continue</p>
 
   return (
     <div id="checkout">
