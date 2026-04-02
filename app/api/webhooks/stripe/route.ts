@@ -1,14 +1,15 @@
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { createSubscription } from '@/lib/services/subscription'
 import type Stripe from 'stripe'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
+  const stripe = getStripe() // ✅ initialize here
+
   const body = await req.text()
   const sig = req.headers.get('stripe-signature')
 
-  // ❌ Invalid request → return 400
   if (!sig) {
     console.error('❌ Missing stripe signature')
     return new Response('Missing signature', { status: 400 })
@@ -32,7 +33,6 @@ export async function POST(req: Request) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
 
-        // ✅ Ensure subscription mode
         if (session.mode !== 'subscription') break
 
         const userId = session.metadata?.userId
@@ -54,7 +54,6 @@ export async function POST(req: Request) {
           await createSubscription(userId, planId, stripeSubscriptionId)
         } catch (err) {
           console.error('❌ createSubscription failed:', err)
-          // ❗ Don't throw → prevents infinite retries
         }
 
         break
@@ -76,6 +75,5 @@ export async function POST(req: Request) {
     return new Response('Webhook handler failed', { status: 500 })
   }
 
-  // ✅ Only valid requests reach here
   return new Response(JSON.stringify({ received: true }), { status: 200 })
 }

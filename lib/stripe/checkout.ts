@@ -1,4 +1,4 @@
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 
 export async function startCheckoutSession(
   productId: string,
@@ -6,33 +6,29 @@ export async function startCheckoutSession(
   email: string
 ) {
   try {
+    const stripe = getStripe() // ✅ initialize here
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-
-      // ✅ required for Embedded Checkout
       ui_mode: 'embedded',
 
       line_items: [
         {
-          price: productId, // ✅ dynamic price from frontend
+          price: productId,
           quantity: 1,
         },
       ],
 
-      // ✅ real user email
       customer_email: email,
 
-      // ✅ must be full URL (you already fixed env)
       return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
 
-      // ✅ used in webhook
       metadata: {
         productId,
         userId,
         planId: productId,
       },
 
-      // ✅ ensures metadata exists on subscription events
       subscription_data: {
         metadata: {
           userId,
